@@ -24,7 +24,6 @@ declare(strict_types=1);
 
 namespace kim\present\autobuildplugin;
 
-use FolderPluginLoader\FolderPluginLoader;
 use kim\present\autobuildplugin\util\Utils;
 use pocketmine\{command, plugin, Server};
 
@@ -81,7 +80,7 @@ class AutoBuildPlugin extends plugin\PluginBase{
 			$pluginManager = Server::getInstance()->getPluginManager();
 			if($args[0] === "*"){
 				foreach($pluginManager->getPlugins() as $pluginName => $plugin){
-					if($plugin->getPluginLoader() instanceof FolderPluginLoader){
+					if(Utils::isFolderPath(Utils::getPluginPath($plugin))){
 						$plugins[$plugin->getName()] = $plugin;
 					}
 				}
@@ -90,7 +89,7 @@ class AutoBuildPlugin extends plugin\PluginBase{
 					$plugin = Utils::getPlugin($pluginName);
 					if($plugin === null){
 						$sender->sendMessage("{$pluginName} is invalid plugin name");
-					}elseif(!($plugin->getPluginLoader() instanceof FolderPluginLoader)){
+					}elseif(!Utils::isFolderPath(Utils::getPluginPath($plugin))){
 						$sender->sendMessage("{$plugin->getName()} is not in folder plugin");
 					}else{
 						$plugins[$plugin->getName()] = $plugin;
