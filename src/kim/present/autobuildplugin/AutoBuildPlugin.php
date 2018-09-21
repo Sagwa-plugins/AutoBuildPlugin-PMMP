@@ -49,11 +49,6 @@ class AutoBuildPlugin extends plugin\PluginBase{
 	 * Called when the plugin is enabled
 	 */
 	public function onEnable() : void{
-		$dataFolder = $this->getDataFolder();
-		if(!file_exists($dataFolder)){
-			mkdir($dataFolder, 0777, true);
-		}
-		$this->saveDefaultConfig();
 		$this->reloadConfig();
 
 		$command = new command\PluginCommand("autobuildplugin", $this);
