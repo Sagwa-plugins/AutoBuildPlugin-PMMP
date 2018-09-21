@@ -7,4 +7,6 @@ skip-metadata: true
 skip-stub: true
 include-minimal: true
 compress: true
+
+remove-exceptions: []
 ...
