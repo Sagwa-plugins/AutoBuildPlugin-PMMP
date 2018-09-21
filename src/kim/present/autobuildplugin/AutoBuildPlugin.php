@@ -128,6 +128,6 @@ class AutoBuildPlugin extends plugin\PluginBase{
 			$phar->compressFiles(\Phar::GZ);
 		}
 		$phar->stopBuffering();
-		Utils::removeDirectory($buildFolder = "{$this->getDataFolder()}build/");
+		Utils::removeDirectory("{$this->getDataFolder()}build/");
 	}
 }
