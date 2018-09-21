@@ -366,12 +366,12 @@ class Utils{
 	}
 
 	/**
-	 * @param PluginBase $plugin
+	 * @param Plugin $plugin
 	 *
 	 * @return string the plugin's $file property
 	 * @throws \ReflectionException
 	 */
-	public static function getPluginPath(PluginBase $plugin) : string{
+	public static function getPluginPath(Plugin $plugin) : string{
 		$reflection = new \ReflectionClass(PluginBase::class);
 		$fileProperty = $reflection->getProperty("file");
 		$fileProperty->setAccessible(true);
