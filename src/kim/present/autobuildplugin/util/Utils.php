@@ -387,4 +387,14 @@ class Utils{
 	public static function isPharPath(string $path) : bool{
 		return strpos($path, "phar://") === 0;
 	}
+
+
+	/**
+	 * @param string $path
+	 *
+	 * @return bool, whether the $path is folder
+	 */
+	public static function isFolderPath(string $path) : bool{
+		return !self::isPharPath($path) && is_dir($path);
+	}
 }
