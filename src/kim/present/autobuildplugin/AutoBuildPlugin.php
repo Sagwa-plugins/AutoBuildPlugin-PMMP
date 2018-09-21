@@ -91,9 +91,21 @@ class AutoBuildPlugin extends plugin\PluginBase{
 			}
 
 			$pluginVersion = $description->getVersion();
-			$pharPath = "{$pluginsPath}{$pluginName}_v{$pluginVersion}.phar";
-			$this->buildPhar($description, "{$pluginDir}/", $pharPath);
-			$this->getLogger()->info("{$pluginName} 플러그인이 빌드되었습니다");
+			$pharName = "{$pluginName}_v{$pluginVersion}.phar";
+			$buildPath = "{$this->getDataFolder()}{$pharName}";
+			$this->buildPhar($description, "{$pluginDir}/", $buildPath);
+
+			$pharPath = "{$pluginsPath}{$pharName}";
+			if(sha1_file($buildPath) === sha1_file($pharPath)){ //이미 같은 플러그인 파일이 존재하면 빌드를 취소
+				unlink($buildPath);
+
+				$this->getLogger()->info("{$pluginName} 플러그인의 빌드가 취소되었습니다");
+			}else{
+				unlink($pharPath);
+				rename($buildPath, $pharPath);
+
+				$this->getLogger()->info("{$pluginName} 플러그인의 빌드가 완료되었습니다");
+			}
 			if(!$alreadyLoaded){
 				$pluginManager->loadPlugin($pharPath);
 			}
