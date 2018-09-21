@@ -53,13 +53,12 @@ class AutoBuildPlugin extends plugin\PluginBase{
 	}
 
 	/**
-	 * @param plugin\PluginBase $plugin
-	 * @param string            $pharPath
-	 * @param string            $filePath
+	 * @param plugin\PluginDescription $description
+	 * @param string                   $pharPath
+	 * @param string                   $filePath
 	 */
-	public function buildPhar(plugin\PluginBase $plugin, string $filePath, string $pharPath) : void{
+	public function buildPhar(plugin\PluginDescription $description, string $filePath, string $pharPath) : void{
 		$setting = $this->getConfig()->getAll();
-		$description = $plugin->getDescription();
 		if(file_exists($pharPath)){
 			try{
 				\Phar::unlinkArchive($pharPath);
