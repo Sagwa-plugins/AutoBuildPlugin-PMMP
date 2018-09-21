@@ -25,7 +25,6 @@ declare(strict_types=1);
 namespace kim\present\autobuildplugin\util;
 
 use pocketmine\plugin\Plugin;
-use pocketmine\plugin\PluginBase;
 use pocketmine\Server;
 
 class Utils{
@@ -366,35 +365,11 @@ class Utils{
 	}
 
 	/**
-	 * @param Plugin $plugin
-	 *
-	 * @return string the plugin's $file property
-	 * @throws \ReflectionException
-	 */
-	public static function getPluginPath(Plugin $plugin) : string{
-		$reflection = new \ReflectionClass(PluginBase::class);
-		$fileProperty = $reflection->getProperty("file");
-		$fileProperty->setAccessible(true);
-
-		return str_replace("\\", "/", $fileProperty->getValue($plugin));
-	}
-
-	/**
 	 * @param string $path
 	 *
 	 * @return bool, whether the $path startswith "phar://"
 	 */
 	public static function isPharPath(string $path) : bool{
 		return strpos($path, "phar://") === 0;
-	}
-
-
-	/**
-	 * @param string $path
-	 *
-	 * @return bool, whether the $path is folder
-	 */
-	public static function isFolderPath(string $path) : bool{
-		return !self::isPharPath($path) && is_dir($path);
 	}
 }

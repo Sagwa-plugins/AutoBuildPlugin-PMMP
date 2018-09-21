@@ -25,7 +25,7 @@ declare(strict_types=1);
 namespace kim\present\autobuildplugin;
 
 use kim\present\autobuildplugin\util\Utils;
-use pocketmine\{command, plugin, Server};
+use pocketmine\plugin;
 
 class AutoBuildPlugin extends plugin\PluginBase{
 	/** @var AutoBuildPlugin */
@@ -49,83 +49,76 @@ class AutoBuildPlugin extends plugin\PluginBase{
 	 * Called when the plugin is enabled
 	 */
 	public function onEnable() : void{
-		$dataFolder = $this->getDataFolder();
-		if(!file_exists($dataFolder)){
-			mkdir($dataFolder, 0777, true);
-		}
-		$this->saveDefaultConfig();
 		$this->reloadConfig();
 
-		$command = new command\PluginCommand("autobuildplugin", $this);
-		$command->setPermission("autobuildplugin.cmd");
-		$command->setDescription("Build the plugin with optimizing");
-		$command->setUsage("/autobuildplugin <plugin name>");
-		$command->setAliases(["build", "mpp"]);
-		$this->getServer()->getCommandMap()->register("autobuildplugin", $command);
-	}
+		$server = $this->getServer();
+		$pluginsPath = $server->getPluginPath();
+		$pluginManager = $server->getPluginManager();
+		foreach(new \DirectoryIterator($pluginsPath) as $fileName){ //plugins 폴더를 탐색
+			$pluginDir = "{$pluginsPath}{$fileName}";
+			if($fileName === "." || $fileName === ".." || !is_dir($pluginDir)){ //폴더가 아닐 경우 넘어감
+				continue;
+			}
 
-	/**
-	 * @param command\CommandSender $sender
-	 * @param command\Command       $command
-	 * @param string                $label
-	 * @param string[]              $args
-	 *
-	 * @return bool
-	 * @throws \ReflectionException
-	 */
-	public function onCommand(command\CommandSender $sender, command\Command $command, string $label, array $args) : bool{
-		if(!empty($args[0])){
-			/** @var plugin\PluginBase[] $plugins */
-			$plugins = [];
-			$pluginManager = Server::getInstance()->getPluginManager();
-			if($args[0] === "*"){
-				foreach($pluginManager->getPlugins() as $pluginName => $plugin){
-					if(Utils::isFolderPath(Utils::getPluginPath($plugin))){
-						$plugins[$plugin->getName()] = $plugin;
+			$descriptionFile = "{$pluginDir}/plugin.yml";
+			if(!file_exists($descriptionFile)){ //plugin.yml 파일이 없을 경우 넘어감
+				continue;
+			}
+
+			try{
+				$description = new plugin\PluginDescription(file_get_contents($descriptionFile));
+			}catch(plugin\PluginException $e){ //plugin.yml 파일이 잘못되었을 경우 오류 메세지 출력 후 넘어감
+				$this->getLogger()->error($e->getMessage());
+				continue;
+			}
+
+			$pluginName = $description->getName();
+			/** @var null|plugin\PluginBase $plugin */
+			$plugin = $pluginManager->getPlugin($pluginName);
+			if($plugin === $this){ //자기 자신일 경우 넘어감
+				continue;
+			}
+
+			$pluginVersion = $description->getVersion();
+			$pharName = "{$pluginName}_v{$pluginVersion}.phar";
+			$buildPath = "{$this->getDataFolder()}{$pharName}";
+			$this->buildPhar($description, "{$pluginDir}/", $buildPath);
+			if($alreadyLoaded = $plugin !== null){ //플러그인이 이미 로드되었는지 확인
+				if(Utils::isPharPath($pluginPath = rtrim(str_replace("\\", "/", $plugin->getFile()), "/"))){ //플러그인 파일이 Phar인지 확인
+					$pluginFilePath = ltrim($pluginPath, "phar://");
+					//TODO:Phar내 파일 비교 메소드 구현 (현재 sha1의 데이터가 항상 다른 문제점이 존재)
+					if(sha1_file($buildPath) !== sha1_file($pluginFilePath)){ //빌드 파일과 다를 경우 존재하는 플러그인 파일을 제거
+						try{
+							\Phar::unlinkArchive($pluginFilePath);
+						}catch(\Exception $e){
+							$this->getLogger()->error($e->getMessage());
+							unlink($pluginPath);
+						}
+					}else{ //아닌 경우 빌드를 취소하고 넘어감
+						unlink($buildPath);
+
+						$this->getLogger()->info("{$pluginName} 플러그인의 빌드가 취소되었습니다");
+						continue;
 					}
 				}
-			}else{
-				foreach($args as $key => $pluginName){
-					$plugin = Utils::getPlugin($pluginName);
-					if($plugin === null){
-						$sender->sendMessage("{$pluginName} is invalid plugin name");
-					}elseif(!Utils::isFolderPath(Utils::getPluginPath($plugin))){
-						$sender->sendMessage("{$plugin->getName()} is not in folder plugin");
-					}else{
-						$plugins[$plugin->getName()] = $plugin;
-					}
-				}
 			}
-			$pluginCount = count($plugins);
-			$sender->sendMessage("Start build the {$pluginCount} plugins");
-
-			$reflection = new \ReflectionClass(plugin\PluginBase::class);
-			$fileProperty = $reflection->getProperty("file");
-			$fileProperty->setAccessible(true);
-			if(!file_exists($dataFolder = $this->getDataFolder())){
-				mkdir($dataFolder, 0777, true);
+			rename($buildPath, $pharPath = "{$pluginsPath}{$pharName}");
+			$this->getLogger()->info("{$pluginName} 플러그인의 빌드가 완료되었습니다");
+			if(!$alreadyLoaded){
+				$pluginManager->loadPlugin($pharPath);
 			}
-			foreach($plugins as $pluginName => $plugin){
-				$pluginVersion = $plugin->getDescription()->getVersion();
-				$pharName = "{$pluginName}_v{$pluginVersion}.phar";
-				$filePath = rtrim(str_replace("\\", "/", $fileProperty->getValue($plugin)), "/") . "/";
-				$this->buildPhar($plugin, $filePath, "{$dataFolder}{$pharName}");
-				$sender->sendMessage("{$pharName} has been created on {$dataFolder}");
-			}
-			$sender->sendMessage("Complete built the {$pluginCount} plugins");
-			return true;
 		}
-		return false;
+
+		$this->getServer()->enablePlugins(plugin\PluginLoadOrder::STARTUP);
 	}
 
 	/**
-	 * @param plugin\PluginBase $plugin
-	 * @param string            $pharPath
-	 * @param string            $filePath
+	 * @param plugin\PluginDescription $description
+	 * @param string                   $pharPath
+	 * @param string                   $filePath
 	 */
-	public function buildPhar(plugin\PluginBase $plugin, string $filePath, string $pharPath) : void{
+	public function buildPhar(plugin\PluginDescription $description, string $filePath, string $pharPath) : void{
 		$setting = $this->getConfig()->getAll();
-		$description = $plugin->getDescription();
 		if(file_exists($pharPath)){
 			try{
 				\Phar::unlinkArchive($pharPath);
@@ -195,6 +188,6 @@ class AutoBuildPlugin extends plugin\PluginBase{
 			$phar->compressFiles(\Phar::GZ);
 		}
 		$phar->stopBuffering();
-		Utils::removeDirectory($buildFolder = "{$this->getDataFolder()}build/");
+		Utils::removeDirectory("{$this->getDataFolder()}build/");
 	}
 }

@@ -5,9 +5,5 @@ version: 1.0.0
 api: [3.0.0, 4.0.0]
 author: PresentKim
 description: 소스 플러그인 자동 빌드 플러그인
-
-permissions:
-  autobuildplugin.cmd:
-    description: AutoBuildPlugin main command
-    default: op
+load: STARTUP
 ...
