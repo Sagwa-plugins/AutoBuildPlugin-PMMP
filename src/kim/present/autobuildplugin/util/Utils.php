@@ -388,7 +388,6 @@ class Utils{
 		return strpos($path, "phar://") === 0;
 	}
 
-
 	/**
 	 * @param string $path
 	 *
