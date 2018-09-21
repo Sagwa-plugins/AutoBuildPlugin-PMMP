@@ -378,4 +378,13 @@ class Utils{
 
 		return str_replace("\\", "/", $fileProperty->getValue($plugin));
 	}
+
+	/**
+	 * @param string $path
+	 *
+	 * @return bool, whether the $path startswith "phar://"
+	 */
+	public static function isPharPath(string $path) : bool{
+		return strpos($path, "phar://") === 0;
+	}
 }
