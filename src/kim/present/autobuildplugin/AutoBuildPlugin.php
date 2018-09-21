@@ -75,7 +75,7 @@ class AutoBuildPlugin extends plugin\PluginBase{
 			$pluginName = $description->getName();
 			/** @var null|plugin\PluginBase $plugin */
 			$plugin = $pluginManager->getPlugin($pluginName);
-			if($plugin !== null){ //플러그인이 이미 로드되었는지 확인
+			if($alreadyLoaded = $plugin !== null){ //플러그인이 이미 로드되었는지 확인
 				$pluginPath = rtrim(str_replace("\\", "/", $plugin->getFile()), "/");
 				if(Utils::isPharPath($pluginPath)){ //플러그인이 Phar파일일 때 파일을 제거
 					try{
@@ -91,7 +91,9 @@ class AutoBuildPlugin extends plugin\PluginBase{
 			$pharPath = "{$pluginsPath}{$pluginName}_v{$pluginVersion}.phar";
 			$this->buildPhar($description, "{$pluginDir}/", $pharPath);
 			$this->getLogger()->warning("{$pluginName} 플러그인이 빌드되었습니다");
-			$pluginManager->loadPlugin($pharPath);
+			if(!$alreadyLoaded){
+				$pluginManager->loadPlugin($pharPath);
+			}
 		}
 
 		$this->getServer()->enablePlugins(plugin\PluginLoadOrder::STARTUP);
