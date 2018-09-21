@@ -25,7 +25,7 @@ declare(strict_types=1);
 namespace kim\present\autobuildplugin;
 
 use kim\present\autobuildplugin\util\Utils;
-use pocketmine\{command, plugin, Server};
+use pocketmine\plugin;
 
 class AutoBuildPlugin extends plugin\PluginBase{
 	/** @var AutoBuildPlugin */
@@ -50,67 +50,6 @@ class AutoBuildPlugin extends plugin\PluginBase{
 	 */
 	public function onEnable() : void{
 		$this->reloadConfig();
-
-		$command = new command\PluginCommand("autobuildplugin", $this);
-		$command->setPermission("autobuildplugin.cmd");
-		$command->setDescription("Build the plugin with optimizing");
-		$command->setUsage("/autobuildplugin <plugin name>");
-		$command->setAliases(["build", "mpp"]);
-		$this->getServer()->getCommandMap()->register("autobuildplugin", $command);
-	}
-
-	/**
-	 * @param command\CommandSender $sender
-	 * @param command\Command       $command
-	 * @param string                $label
-	 * @param string[]              $args
-	 *
-	 * @return bool
-	 * @throws \ReflectionException
-	 */
-	public function onCommand(command\CommandSender $sender, command\Command $command, string $label, array $args) : bool{
-		if(!empty($args[0])){
-			/** @var plugin\PluginBase[] $plugins */
-			$plugins = [];
-			$pluginManager = Server::getInstance()->getPluginManager();
-			if($args[0] === "*"){
-				foreach($pluginManager->getPlugins() as $pluginName => $plugin){
-					if(Utils::isFolderPath(Utils::getPluginPath($plugin))){
-						$plugins[$plugin->getName()] = $plugin;
-					}
-				}
-			}else{
-				foreach($args as $key => $pluginName){
-					$plugin = Utils::getPlugin($pluginName);
-					if($plugin === null){
-						$sender->sendMessage("{$pluginName} is invalid plugin name");
-					}elseif(!Utils::isFolderPath(Utils::getPluginPath($plugin))){
-						$sender->sendMessage("{$plugin->getName()} is not in folder plugin");
-					}else{
-						$plugins[$plugin->getName()] = $plugin;
-					}
-				}
-			}
-			$pluginCount = count($plugins);
-			$sender->sendMessage("Start build the {$pluginCount} plugins");
-
-			$reflection = new \ReflectionClass(plugin\PluginBase::class);
-			$fileProperty = $reflection->getProperty("file");
-			$fileProperty->setAccessible(true);
-			if(!file_exists($dataFolder = $this->getDataFolder())){
-				mkdir($dataFolder, 0777, true);
-			}
-			foreach($plugins as $pluginName => $plugin){
-				$pluginVersion = $plugin->getDescription()->getVersion();
-				$pharName = "{$pluginName}_v{$pluginVersion}.phar";
-				$filePath = rtrim(str_replace("\\", "/", $fileProperty->getValue($plugin)), "/") . "/";
-				$this->buildPhar($plugin, $filePath, "{$dataFolder}{$pharName}");
-				$sender->sendMessage("{$pharName} has been created on {$dataFolder}");
-			}
-			$sender->sendMessage("Complete built the {$pluginCount} plugins");
-			return true;
-		}
-		return false;
 	}
 
 	/**
