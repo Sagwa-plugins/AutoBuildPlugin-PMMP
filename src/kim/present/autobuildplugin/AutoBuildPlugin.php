@@ -76,6 +76,9 @@ class AutoBuildPlugin extends plugin\PluginBase{
 			/** @var null|plugin\PluginBase $plugin */
 			$plugin = $pluginManager->getPlugin($pluginName);
 			if($alreadyLoaded = $plugin !== null){ //플러그인이 이미 로드되었는지 확인
+				if($plugin === $this){ //자기 자신일 경우 넘어감
+					continue;
+				}
 				$pluginPath = rtrim(str_replace("\\", "/", $plugin->getFile()), "/");
 				if(Utils::isPharPath($pluginPath)){ //플러그인이 Phar파일일 때 파일을 제거
 					try{
