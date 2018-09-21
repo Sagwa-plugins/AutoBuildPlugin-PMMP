@@ -73,6 +73,10 @@ class AutoBuildPlugin extends plugin\PluginBase{
 			}
 
 			$pluginName = $description->getName();
+			if(in_array($pluginName, $this->getConfig()->get("autobuild-exceptions", []))){ //자동 빌드 배열에 없을 경우 넘어감
+				continue;
+			}
+
 			/** @var null|plugin\PluginBase $plugin */
 			$plugin = $pluginManager->getPlugin($pluginName);
 			if($plugin === $this){ //자기 자신일 경우 넘어감
