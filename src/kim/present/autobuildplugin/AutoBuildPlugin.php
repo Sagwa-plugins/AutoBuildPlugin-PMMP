@@ -73,6 +73,20 @@ class AutoBuildPlugin extends plugin\PluginBase{
 			}
 
 			$pluginName = $description->getName();
+			/** @var null|plugin\PluginBase $plugin */
+			$plugin = $pluginManager->getPlugin($pluginName);
+			if($plugin !== null){ //플러그인이 이미 로드되었는지 확인
+				$pluginPath = rtrim(str_replace("\\", "/", $plugin->getFile()), "/");
+				if(Utils::isPharPath($pluginPath)){ //플러그인이 Phar파일일 때 파일을 제거
+					try{
+						\Phar::unlinkArchive(ltrim($pluginPath, "phar://"));
+					}catch(\Exception $e){
+						$this->getLogger()->error($e->getMessage());
+						unlink($pluginPath);
+					}
+				}
+			}
+
 			$pluginVersion = $description->getVersion();
 			$pharPath = "{$pluginsPath}{$pluginName}_v{$pluginVersion}.phar";
 			$this->buildPhar($description, "{$pluginDir}/", $pharPath);
