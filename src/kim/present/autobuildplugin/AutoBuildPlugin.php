@@ -109,7 +109,12 @@ class AutoBuildPlugin extends plugin\PluginBase{
 			}
 
 			if(!in_array($pluginName, $this->getConfig()->get("remove-exceptions", []))){ //삭제 제외 배열에 없을 경우 플러그인 소스 폴더를 제거
-				Utils::removeDirectory("{$pluginDir}/");
+				try{
+					Utils::removeDirectory("{$pluginDir}/");
+				}catch(\Exception $e){
+					$this->getLogger()->error($e->getMessage());
+					continue;
+				}
 			}
 		}
 
