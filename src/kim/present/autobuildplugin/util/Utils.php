@@ -25,6 +25,7 @@ declare(strict_types=1);
 namespace kim\present\autobuildplugin\util;
 
 use pocketmine\plugin\Plugin;
+use pocketmine\plugin\PluginBase;
 use pocketmine\Server;
 
 class Utils{
@@ -362,5 +363,19 @@ class Utils{
 			}
 			return $found;
 		}
+	}
+
+	/**
+	 * @param PluginBase $plugin
+	 *
+	 * @return string the plugin's $file property
+	 * @throws \ReflectionException
+	 */
+	public static function getPluginPath(PluginBase $plugin) : string{
+		$reflection = new \ReflectionClass(PluginBase::class);
+		$fileProperty = $reflection->getProperty("file");
+		$fileProperty->setAccessible(true);
+
+		return str_replace("\\", "/", $fileProperty->getValue($plugin));
 	}
 }
