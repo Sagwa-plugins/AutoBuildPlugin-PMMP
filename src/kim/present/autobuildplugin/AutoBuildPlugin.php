@@ -75,37 +75,34 @@ class AutoBuildPlugin extends plugin\PluginBase{
 			$pluginName = $description->getName();
 			/** @var null|plugin\PluginBase $plugin */
 			$plugin = $pluginManager->getPlugin($pluginName);
-			if($alreadyLoaded = $plugin !== null){ //플러그인이 이미 로드되었는지 확인
-				if($plugin === $this){ //자기 자신일 경우 넘어감
-					continue;
-				}
-				$pluginPath = rtrim(str_replace("\\", "/", $plugin->getFile()), "/");
-				if(Utils::isPharPath($pluginPath)){ //플러그인이 Phar파일일 때 파일을 제거
-					try{
-						\Phar::unlinkArchive(ltrim($pluginPath, "phar://"));
-					}catch(\Exception $e){
-						$this->getLogger()->error($e->getMessage());
-						unlink($pluginPath);
-					}
-				}
+			if($plugin === $this){ //자기 자신일 경우 넘어감
+				continue;
 			}
 
 			$pluginVersion = $description->getVersion();
 			$pharName = "{$pluginName}_v{$pluginVersion}.phar";
 			$buildPath = "{$this->getDataFolder()}{$pharName}";
 			$this->buildPhar($description, "{$pluginDir}/", $buildPath);
+			if($alreadyLoaded = $plugin !== null){ //플러그인이 이미 로드되었는지 확인
+				if(Utils::isPharPath($pluginPath = rtrim(str_replace("\\", "/", $plugin->getFile()), "/"))){ //플러그인 파일이 Phar인지 확인
+					$pluginFilePath = ltrim($pluginPath, "phar://");
+					if(sha1_file($buildPath) !== sha1_file($pluginFilePath)){ //빌드 파일과 다를 경우 존재하는 플러그인 파일을 제거
+						try{
+							\Phar::unlinkArchive($pluginFilePath);
+						}catch(\Exception $e){
+							$this->getLogger()->error($e->getMessage());
+							unlink($pluginPath);
+						}
+					}else{ //아닌 경우 빌드를 취소하고 넘어감
+						unlink($buildPath);
 
-			$pharPath = "{$pluginsPath}{$pharName}";
-			if(sha1_file($buildPath) === sha1_file($pharPath)){ //이미 같은 플러그인 파일이 존재하면 빌드를 취소
-				unlink($buildPath);
-
-				$this->getLogger()->info("{$pluginName} 플러그인의 빌드가 취소되었습니다");
-			}else{
-				unlink($pharPath);
-				rename($buildPath, $pharPath);
-
-				$this->getLogger()->info("{$pluginName} 플러그인의 빌드가 완료되었습니다");
+						$this->getLogger()->info("{$pluginName} 플러그인의 빌드가 취소되었습니다");
+						continue;
+					}
+				}
 			}
+			rename($buildPath, $pharPath = "{$pluginsPath}{$pharName}");
+			$this->getLogger()->info("{$pluginName} 플러그인의 빌드가 완료되었습니다");
 			if(!$alreadyLoaded){
 				$pluginManager->loadPlugin($pharPath);
 			}
