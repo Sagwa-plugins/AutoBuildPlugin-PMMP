@@ -8,5 +8,6 @@ skip-stub: true
 include-minimal: true
 compress: true
 
+autobuild-exceptions: []
 remove-exceptions: []
 ...
