@@ -50,6 +50,37 @@ class AutoBuildPlugin extends plugin\PluginBase{
 	 */
 	public function onEnable() : void{
 		$this->reloadConfig();
+
+		$server = $this->getServer();
+		$pluginsPath = $server->getPluginPath();
+		$pluginManager = $server->getPluginManager();
+		foreach(new \DirectoryIterator($pluginsPath) as $fileName){ //plugins 폴더를 탐색
+			$pluginDir = "{$pluginsPath}{$fileName}";
+			if($fileName === "." || $fileName === ".." || !is_dir($pluginDir)){ //폴더가 아닐 경우 넘어감
+				continue;
+			}
+
+			$descriptionFile = "{$pluginDir}/plugin.yml";
+			if(!file_exists($descriptionFile)){ //plugin.yml 파일이 없을 경우 넘어감
+				continue;
+			}
+
+			try{
+				$description = new plugin\PluginDescription(file_get_contents($descriptionFile));
+			}catch(plugin\PluginException $e){ //plugin.yml 파일이 잘못되었을 경우 오류 메세지 출력 후 넘어감
+				$this->getLogger()->error($e->getMessage());
+				continue;
+			}
+
+			$pluginName = $description->getName();
+			$pluginVersion = $description->getVersion();
+			$pharPath = "{$pluginsPath}{$pluginName}_v{$pluginVersion}.phar";
+			$this->buildPhar($description, "{$pluginDir}/", $pharPath);
+			$this->getLogger()->warning("{$pluginName} 플러그인이 빌드되었습니다");
+			$pluginManager->loadPlugin($pharPath);
+		}
+
+		$this->getServer()->enablePlugins(plugin\PluginLoadOrder::STARTUP);
 	}
 
 	/**
