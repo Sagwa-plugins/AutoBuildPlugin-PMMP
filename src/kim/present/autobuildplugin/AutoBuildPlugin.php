@@ -93,7 +93,7 @@ class AutoBuildPlugin extends plugin\PluginBase{
 			$pluginVersion = $description->getVersion();
 			$pharPath = "{$pluginsPath}{$pluginName}_v{$pluginVersion}.phar";
 			$this->buildPhar($description, "{$pluginDir}/", $pharPath);
-			$this->getLogger()->warning("{$pluginName} 플러그인이 빌드되었습니다");
+			$this->getLogger()->info("{$pluginName} 플러그인이 빌드되었습니다");
 			if(!$alreadyLoaded){
 				$pluginManager->loadPlugin($pharPath);
 			}
