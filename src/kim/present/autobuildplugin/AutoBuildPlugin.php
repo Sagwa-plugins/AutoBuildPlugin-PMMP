@@ -25,9 +25,9 @@ declare(strict_types=1);
 namespace kim\present\autobuildplugin;
 
 use kim\present\autobuildplugin\util\Utils;
-use pocketmine\plugin;
+use pocketmine\plugin\{PluginBase, PluginDescription, PluginException, PluginLoadOrder};
 
-class AutoBuildPlugin extends plugin\PluginBase{
+class AutoBuildPlugin extends PluginBase{
 	/** @var AutoBuildPlugin */
 	private static $instance;
 
@@ -66,8 +66,8 @@ class AutoBuildPlugin extends plugin\PluginBase{
 			}
 
 			try{
-				$description = new plugin\PluginDescription(file_get_contents($descriptionFile));
-			}catch(plugin\PluginException $e){ //plugin.yml 파일이 잘못되었을 경우 오류 메세지 출력 후 넘어감
+				$description = new PluginDescription(file_get_contents($descriptionFile));
+			}catch(PluginException $e){ //plugin.yml 파일이 잘못되었을 경우 오류 메세지 출력 후 넘어감
 				$this->getLogger()->error($e->getMessage());
 				continue;
 			}
@@ -77,7 +77,7 @@ class AutoBuildPlugin extends plugin\PluginBase{
 				continue;
 			}
 
-			/** @var null|plugin\PluginBase $plugin */
+			/** @var null|PluginBase $plugin */
 			$plugin = $pluginManager->getPlugin($pluginName);
 			if($plugin === $this){ //자기 자신일 경우 넘어감
 				continue;
@@ -122,15 +122,15 @@ class AutoBuildPlugin extends plugin\PluginBase{
 			}
 		}
 
-		$this->getServer()->enablePlugins(plugin\PluginLoadOrder::STARTUP);
+		$this->getServer()->enablePlugins(PluginLoadOrder::STARTUP);
 	}
 
 	/**
-	 * @param plugin\PluginDescription $description
-	 * @param string                   $pharPath
-	 * @param string                   $filePath
+	 * @param PluginDescription $description
+	 * @param string            $pharPath
+	 * @param string            $filePath
 	 */
-	public function buildPhar(plugin\PluginDescription $description, string $filePath, string $pharPath) : void{
+	public function buildPhar(PluginDescription $description, string $filePath, string $pharPath) : void{
 		$setting = $this->getConfig()->getAll();
 		if(file_exists($pharPath)){
 			try{
@@ -175,7 +175,7 @@ class AutoBuildPlugin extends plugin\PluginBase{
 						mkdir($newFileDir, 0777, true);
 					}
 					if(substr($path, -4) == ".php"){
-						$contents = \file_get_contents($path);
+						$contents = file_get_contents($path);
 						if($setting["code-optimize"]){
 							$contents = Utils::codeOptimize($contents);
 						}
