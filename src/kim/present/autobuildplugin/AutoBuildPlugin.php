@@ -89,7 +89,7 @@ class AutoBuildPlugin extends PluginBase{
 			$this->buildPhar($description, "{$pluginDir}/", $buildPath);
 			if($alreadyLoaded = $plugin !== null){ //플러그인이 이미 로드되었는지 확인
 				if(Utils::isPharPath($pluginPath = rtrim(str_replace("\\", "/", $plugin->getFile()), "/"))){ //플러그인 파일이 Phar인지 확인
-					$pluginFilePath = ltrim($pluginPath, "phar://");
+					$pluginFilePath = strpos($pluginPath, "phar://") === 0 ? substr($pluginPath, strlen("phar://")) : $pluginPath;
 					//TODO:Phar내 파일 비교 메소드 구현 (현재 sha1의 데이터가 항상 다른 문제점이 존재)
 					if(sha1_file($buildPath) !== sha1_file($pluginFilePath)){ //빌드 파일과 다를 경우 존재하는 플러그인 파일을 제거
 						try{
