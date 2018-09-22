@@ -28,6 +28,38 @@ use pocketmine\plugin\Plugin;
 use pocketmine\Server;
 
 class Utils{
+	/** Whitespaces left and right from this signs can be ignored */
+	private const WHITESPACE_IGNORE_TOKEN = [
+		T_CONCAT_EQUAL,
+		T_DOUBLE_ARROW,
+		T_BOOLEAN_AND,
+		T_BOOLEAN_OR,
+		T_IS_EQUAL,
+		T_IS_NOT_EQUAL,
+		T_IS_SMALLER_OR_EQUAL,
+		T_IS_GREATER_OR_EQUAL,
+		T_INC,
+		T_DEC,
+		T_PLUS_EQUAL,
+		T_MINUS_EQUAL,
+		T_MUL_EQUAL,
+		T_DIV_EQUAL,
+		T_IS_IDENTICAL,
+		T_IS_NOT_IDENTICAL,
+		T_DOUBLE_COLON,
+		T_PAAMAYIM_NEKUDOTAYIM,
+		T_OBJECT_OPERATOR,
+		T_DOLLAR_OPEN_CURLY_BRACES,
+		T_AND_EQUAL,
+		T_MOD_EQUAL,
+		T_XOR_EQUAL,
+		T_OR_EQUAL,
+		T_SL,
+		T_SR,
+		T_SL_EQUAL,
+		T_SR_EQUAL
+	];
+
 	/**
 	 * @url http://php.net/manual/en/function.php-strip-whitespace.php#82437
 	 *
@@ -36,37 +68,6 @@ class Utils{
 	 * @return string
 	 */
 	public static function removeWhitespace(string $originalCode) : string{
-		// Whitespaces left and right from this signs can be ignored
-		$ignoreWhitespaceTokenList = [
-			T_CONCAT_EQUAL,
-			T_DOUBLE_ARROW,
-			T_BOOLEAN_AND,
-			T_BOOLEAN_OR,
-			T_IS_EQUAL,
-			T_IS_NOT_EQUAL,
-			T_IS_SMALLER_OR_EQUAL,
-			T_IS_GREATER_OR_EQUAL,
-			T_INC,
-			T_DEC,
-			T_PLUS_EQUAL,
-			T_MINUS_EQUAL,
-			T_MUL_EQUAL,
-			T_DIV_EQUAL,
-			T_IS_IDENTICAL,
-			T_IS_NOT_IDENTICAL,
-			T_DOUBLE_COLON,
-			T_PAAMAYIM_NEKUDOTAYIM,
-			T_OBJECT_OPERATOR,
-			T_DOLLAR_OPEN_CURLY_BRACES,
-			T_AND_EQUAL,
-			T_MOD_EQUAL,
-			T_XOR_EQUAL,
-			T_OR_EQUAL,
-			T_SL,
-			T_SR,
-			T_SL_EQUAL,
-			T_SR_EQUAL
-		];
 		$tokens = token_get_all($originalCode);
 
 		$stripedCode = "";
@@ -78,7 +79,7 @@ class Utils{
 			$token = $tokens[$i];
 			if(is_array($token)){
 				list($tokenNumber, $tokenString) = $token; // tokens: number, string, line
-				if(in_array($tokenNumber, $ignoreWhitespaceTokenList)){
+				if(in_array($tokenNumber, self::WHITESPACE_IGNORE_TOKEN)){
 					$stripedCode .= $tokenString;
 					$ignoreWhitespace = true;
 				}elseif($tokenNumber == T_INLINE_HTML){
@@ -113,7 +114,7 @@ class Utils{
 					$ignoreWhitespace = true;
 				}elseif($tokenNumber == T_WHITESPACE){
 					$nt = @$tokens[$i + 1];
-					if(!$ignoreWhitespace && (!is_string($nt) || $nt == "\$") && !in_array($nt[0], $ignoreWhitespaceTokenList)){
+					if(!$ignoreWhitespace && (!is_string($nt) || $nt == "\$") && !in_array($nt[0], self::WHITESPACE_IGNORE_TOKEN)){
 						$stripedCode .= " ";
 					}
 					$ignoreWhitespace = false;
@@ -149,6 +150,12 @@ class Utils{
 		return $stripedCode;
 	}
 
+
+	private const REMOVE_IGNORE_ANNOTATION_MAP = [
+		"@priority" => "/^[\t ]*\* @priority[\t ]{1,}([a-zA-Z]{1,})/m",
+		"@ignoreCancelled" => "/^[\t ]*\* @ignoreCancelled[\t ]{1,}([a-zA-Z]{1,})/m"
+	];
+
 	/**
 	 * @param string $originalCode
 	 *
@@ -163,11 +170,10 @@ class Utils{
 					continue;
 				}elseif($tokens[$i][0] === T_DOC_COMMENT){
 					$annotations = [];
-					if(preg_match("/^[\t ]*\* @priority[\t ]{1,}([a-zA-Z]{1,})/m", $tokens[$i][1], $matches) > 0){
-						$annotations[] = "@priority $matches[1]";
-					}
-					if(preg_match("/^[\t ]*\* @ignoreCancelled[\t ]{1,}([a-zA-Z]{1,})/m", $tokens[$i][1], $matches) > 0){
-						$annotations[] = "@ignoreCancelled $matches[1]";
+					foreach(self::REMOVE_IGNORE_ANNOTATION_MAP as $annotation => $regex){
+						if(preg_match($regex, $tokens[$i][1], $matches) > 0){
+							$annotations[] = "{$annotation} {$matches[1]}";
+						}
 					}
 					$tokens[$i][1] = "";
 					if(!empty($annotations)){
@@ -186,25 +192,33 @@ class Utils{
 		return $stripedCode;
 	}
 
+
+	private const RENAME_IGNORE_BEFORE = [
+		"protected",
+		"private",
+		"public",
+		"static",
+		"final",
+		"::"
+	];
+	private static $firstChars = null;
+	private static $otherChars = null;
+
 	/**
 	 * @param string $originalCode
 	 *
 	 * @return string
 	 */
 	public static function renameVariable(string $originalCode) : string{
-		$ignoreBeforeList = [
-			"protected",
-			"private",
-			"public",
-			"static",
-			"final",
-			"::"
-		];
-		$firstChars = $firstChars = array_merge(range("a", "z"), range("A", "Z"));
-		$otherChars = array_merge(range("0", "9"), $firstChars);
-		array_unshift($firstChars, "_");
-		array_unshift($otherChars, "_");
-		$firstCharCount = count($firstChars);
+		if(self::$firstChars === null){
+			self::$firstChars = $firstChars = array_merge(range("a", "z"), range("A", "Z"));
+			array_unshift(self::$firstChars, "_");
+		}
+		if(self::$otherChars === null){
+			self::$otherChars = array_merge(range("0", "9"), self::$firstChars);
+			array_unshift(self::$otherChars, "_");
+		}
+		$firstCharCount = count(self::$firstChars);
 		$variables = ["\$this" => "\$this"];
 		$variableCount = 0;
 		$tokens = token_get_all($originalCode);
@@ -227,12 +241,12 @@ class Utils{
 						break;
 					}
 				}
-				if($tokens[$i][0] === T_VARIABLE && !Utils::in_arrayi($before, $ignoreBeforeList)){
+				if($tokens[$i][0] === T_VARIABLE && !Utils::in_arrayi($before, self::RENAME_IGNORE_BEFORE)){
 					if(!isset($variables[$tokens[$i][1]])){
-						$variableName = "\${$firstChars[$variableCount % $firstCharCount]}";
+						$variableName = "\$" . self::$firstChars[$variableCount % $firstCharCount];
 						if($variableCount){
 							if(($sub = floor($variableCount / $firstCharCount) - 1) > -1){
-								$variableName .= $otherChars[$sub];
+								$variableName .= self::$otherChars[$sub];
 							}
 						}
 						++$variableCount;
@@ -248,20 +262,13 @@ class Utils{
 		return $stripedCode;
 	}
 
-	/**
-	 * @param string $str
-	 * @param array  $strs
-	 *
-	 * @return bool
-	 */
-	public static function in_arrayi(string $str, array $strs) : bool{
-		foreach($strs as $key => $value){
-			if(strcasecmp($str, $value) === 0){
-				return true;
-			}
-		}
-		return false;
-	}
+
+	private const OPTIMIZE_IGNORE_BEFORE = [
+		"\\",
+		"::",
+		"->",
+		"function"
+	];
 
 	/**
 	 * @param string $originalCode
@@ -269,12 +276,6 @@ class Utils{
 	 * @return string
 	 */
 	public static function codeOptimize(string $originalCode) : string{
-		$ignoreBeforeList = [
-			"\\",
-			"::",
-			"->",
-			"function"
-		];
 		$tokens = token_get_all($originalCode);
 		$stripedCode = "";
 		for($i = 0, $count = count($tokens); $i < $count; $i++){
@@ -296,7 +297,7 @@ class Utils{
 							break;
 						}
 					}
-					if($before === null || !Utils::in_arrayi($before, $ignoreBeforeList)){
+					if($before === null || !Utils::in_arrayi($before, self::OPTIMIZE_IGNORE_BEFORE)){
 						if(defined("\\" . $tokens[$i][1])){
 							$tokens[$i][1] = "\\" . $tokens[$i][1];
 						}elseif(function_exists("\\" . $tokens[$i][1]) && isset($tokens[$i + 1]) && $tokens[$i + 1] === "("){
@@ -314,6 +315,22 @@ class Utils{
 			}
 		}
 		return $stripedCode;
+	}
+
+
+	/**
+	 * @param string $str
+	 * @param array  $strs
+	 *
+	 * @return bool
+	 */
+	public static function in_arrayi(string $str, array $strs) : bool{
+		foreach($strs as $key => $value){
+			if(strcasecmp($str, $value) === 0){
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**
