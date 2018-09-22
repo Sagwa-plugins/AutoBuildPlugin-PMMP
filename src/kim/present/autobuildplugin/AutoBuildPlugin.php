@@ -165,10 +165,11 @@ class AutoBuildPlugin extends PluginBase{
 		}
 		mkdir($buildFolder);
 		foreach(new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($filePath)) as $path => $fileInfo){
+			$path = str_replace("\\", "/", $path);
 			$fileName = $fileInfo->getFilename();
 			if($fileName !== "." && $fileName !== ".."){
 				$inPath = substr($path, strlen($filePath));
-				if(!$setting["include-minimal"] || $inPath === "plugin.yml" || strpos($inPath, "src\\") === 0 || strpos($inPath, "resources\\") === 0){
+				if(!$setting["include-minimal"] || $inPath === "plugin.yml" || strpos($inPath, "src/") === 0 || strpos($inPath, "resources/") === 0){
 					$newFilePath = "{$buildFolder}{$inPath}";
 					$newFileDir = dirname($newFilePath);
 					if(!file_exists($newFileDir)){
