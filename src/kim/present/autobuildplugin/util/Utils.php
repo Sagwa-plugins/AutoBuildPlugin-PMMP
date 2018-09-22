@@ -212,6 +212,7 @@ class Utils{
 		for($i = 0, $count = count($tokens); $i < $count; $i++){
 			if(is_array($tokens[$i])){
 				$beforeIndex = $i - 1;
+				/** @var null|string $before */
 				$before = null;
 				while(isset($tokens[$beforeIndex])){
 					$token = $tokens[$beforeIndex--];
@@ -280,6 +281,7 @@ class Utils{
 			if(is_array($tokens[$i])){
 				if($tokens[$i][0] === T_STRING){
 					$beforeIndex = $i - 1;
+					/** @var null|string $before */
 					$before = null;
 					while(isset($tokens[$beforeIndex])){
 						$token = $tokens[$beforeIndex--];
