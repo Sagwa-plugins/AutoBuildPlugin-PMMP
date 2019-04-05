@@ -122,7 +122,7 @@ class AutoBuildPlugin extends PluginBase{
 			}
 		}
 
-		$this->getServer()->enablePlugins(PluginLoadOrder::STARTUP);
+		$this->getServer()->enablePlugins(PluginLoadOrder::STARTUP());
 	}
 
 	/**
