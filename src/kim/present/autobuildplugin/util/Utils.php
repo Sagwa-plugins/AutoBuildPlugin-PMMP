@@ -150,7 +150,9 @@ class Utils{
 
 	private const REMOVE_IGNORE_ANNOTATION_MAP = [
 		"@priority" => "/^[\t ]*\* @priority[\t ]{1,}([a-zA-Z]{1,})/m",
-		"@ignoreCancelled" => "/^[\t ]*\* @ignoreCancelled[\t ]{1,}([a-zA-Z]{1,})/m"
+		"@notHandler" => "/^[\t ]*\* @notHandler[\t ]{1,}([a-zA-Z]{1,})/m",
+		"@softDepend" => "/^[\t ]*\* @softDepend[\t ]{1,}([a-zA-Z]{1,})/m",
+		"@handleCancelled" => "/^[\t ]*\* @handleCancelled[\t ]{1,}([a-zA-Z]{1,})/m"
 	];
 
 	/**
